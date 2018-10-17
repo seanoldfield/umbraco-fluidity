@@ -250,10 +250,10 @@ namespace Fluidity.Web.Trees
 
         protected TreeNode CreateEntityTreeNode(FluidityCollectionConfig collection, object entity, FormDataCollection queryStrings)
         {
-            var itemId = entity.GetPropertyValue(collection.IdProperty);
+            var itemId = entity.GetPropertyValue(collection.IdProperty.Alias);
             var compositeId = collection.Alias + "!" + itemId;
 
-            var entityName = collection.NameProperty != null ? entity.GetPropertyValue(collection.NameProperty).ToString()
+            var entityName = collection.NameProperty != null ? entity.GetPropertyValue(collection.NameProperty.Alias).ToString()
                                 : collection.NameFormat != null ? collection.NameFormat(entity) : entity.ToString();
 
             var node = CreateTreeNode(

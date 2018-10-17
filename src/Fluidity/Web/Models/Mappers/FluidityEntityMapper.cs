@@ -37,7 +37,7 @@ namespace Fluidity.Web.Models.Mappers
 
         public FluidityEntityDisplayModel ToDisplayModel(FluiditySectionConfig section, FluidityCollectionConfig collection, object entity)
         {
-            var entityId = entity?.GetPropertyValue(collection.IdProperty);
+            var entityId = entity?.GetPropertyValue(collection.IdProperty.Alias);
             var entityCompositeId = entityId != null
                 ? collection.Alias + "!" + entityId
                 : null;
@@ -45,7 +45,7 @@ namespace Fluidity.Web.Models.Mappers
             var name = "";
             if (collection.NameProperty != null)
             {
-                name = entity.GetPropertyValue(collection.NameProperty).ToString();
+                name = entity.GetPropertyValue(collection.NameProperty.Alias).ToString();
             }
             else if (collection.NameFormat != null)
             {
@@ -58,14 +58,14 @@ namespace Fluidity.Web.Models.Mappers
 
             var display = new FluidityEntityDisplayModel
             {
-                Id = entity?.GetPropertyValue(collection.IdProperty),
+                Id = entity?.GetPropertyValue(collection.IdProperty.Alias),
                 Name = name,
                 Icon = collection.IconSingular + (collection.IconColor != null ? " color-" + collection.IconColor : ""),
                 Section = section.Alias,
                 Tree = section.Tree.Alias,
                 Collection = collection.Alias,
-                CreateDate = entity != null && collection.DateCreatedProperty != null ? (DateTime)entity.GetPropertyValue(collection.DateCreatedProperty) : DateTime.MinValue,
-                UpdateDate = entity != null && collection.DateModifiedProperty != null ? (DateTime)entity.GetPropertyValue(collection.DateModifiedProperty) : DateTime.MinValue,
+                CreateDate = entity != null && collection.DateCreatedProperty != null ? (DateTime)entity.GetPropertyValue(collection.DateCreatedProperty.Alias) : DateTime.MinValue,
+                UpdateDate = entity != null && collection.DateModifiedProperty != null ? (DateTime)entity.GetPropertyValue(collection.DateModifiedProperty.Alias) : DateTime.MinValue,
                 EditPath = $"{section.Alias}/fluidity/edit/{entityCompositeId}",
             };
 
@@ -75,9 +75,9 @@ namespace Fluidity.Web.Models.Mappers
 
                 foreach (var field in collection.ListView.Fields)
                 {
-                    var value = entity?.GetPropertyValue(field.Property);
+                    var value = entity?.GetPropertyValue(field.Alias);
 
-                    var encryptedProp = collection.EncryptedProperties?.FirstOrDefault(x => x.Name == field.Property.Name);
+                    var encryptedProp = collection.EncryptedProperties?.FirstOrDefault(x => x.Alias == field.Alias);
                     if (encryptedProp != null)
                     {
                         value = SecurityHelper.Decrypt(value.ToString());
@@ -107,15 +107,15 @@ namespace Fluidity.Web.Models.Mappers
         public FluidityEntityEditModel ToEditModel(FluiditySectionConfig section, FluidityCollectionConfig collection, object entity)
         {
             var isNew = entity == null;
-            var entityId = entity?.GetPropertyValue(collection.IdProperty);
+            var entityId = entity?.GetPropertyValue(collection.IdProperty.Alias);
             var entityCompositeId = entityId != null
                 ? collection.Alias + "!" + entityId
                 : null;
 
             var display = new FluidityEntityEditModel
             {
-                Id = entity?.GetPropertyValue(collection.IdProperty) ?? collection.IdProperty.Type.GetDefaultValue(),
-                Name = collection?.NameProperty != null ? entity?.GetPropertyValue(collection.NameProperty).ToString() : collection.NameSingular,
+                Id = entity?.GetPropertyValue(collection.IdProperty.Alias) ?? collection.IdProperty.Type.GetDefaultValue(),
+                Name = collection?.NameProperty != null ? entity?.GetPropertyValue(collection.NameProperty.Alias).ToString() : collection.NameSingular,
                 HasNameProperty = collection.NameProperty != null,
                 Section = section.Alias,
                 Tree = section.Tree.Alias,
@@ -128,9 +128,9 @@ namespace Fluidity.Web.Models.Mappers
                 IsChildOfListView = collection.ViewMode == FluidityViewMode.List,
                 IsChildOfTreeView = collection.ViewMode == FluidityViewMode.Tree,
                 TreeNodeUrl = "/umbraco/backoffice/fluidity/FluidityTree/GetTreeNode/" + entityCompositeId + "?application=" + section.Alias,
-                CreateDate = entity != null && collection.DateCreatedProperty != null ? (DateTime)entity.GetPropertyValue(collection.DateCreatedProperty) : DateTime.MinValue,
-                UpdateDate = entity != null && collection.DateModifiedProperty != null ? (DateTime)entity.GetPropertyValue(collection.DateCreatedProperty) : DateTime.MinValue,
-                Path = collection.Path + (entity != null ? FluidityConstants.PATH_SEPERATOR + collection.Alias + "!" + entity.GetPropertyValue(collection.IdProperty) : string.Empty)
+                CreateDate = entity != null && collection.DateCreatedProperty != null ? (DateTime)entity.GetPropertyValue(collection.DateCreatedProperty.Alias) : DateTime.MinValue,
+                UpdateDate = entity != null && collection.DateModifiedProperty != null ? (DateTime)entity.GetPropertyValue(collection.DateCreatedProperty.Alias) : DateTime.MinValue,
+                Path = collection.Path + (entity != null ? FluidityConstants.PATH_SEPERATOR + collection.Alias + "!" + entity.GetPropertyValue(collection.IdProperty.Alias) : string.Empty)
             };
 
             if (collection.Editor?.Tabs != null)
@@ -160,7 +160,7 @@ namespace Fluidity.Web.Models.Mappers
 
                             // Calculate value
                             object value = !isNew
-                                ? entity?.GetPropertyValue(field.Property)
+                                ? entity?.GetPropertyValue(field.Alias)
                                 : field.DefaultValueFunc != null ? field.DefaultValueFunc() : field.Property.Type.GetDefaultValue();
 
                             var encryptedProp = collection.EncryptedProperties?.FirstOrDefault(x => x.Name == field.Property.Name);
@@ -206,7 +206,7 @@ namespace Fluidity.Web.Models.Mappers
                             var propertyScaffold = new ContentPropertyDisplay
                             {
                                 Id = properties.Count,
-                                Alias = field.Property.Name,
+                                Alias = field.Alias ?? field.Property.Name,
                                 Label = label,
                                 Description = description,
                                 Editor = dataTypeInfo.PropertyEditor.Alias,
@@ -244,9 +244,15 @@ namespace Fluidity.Web.Models.Mappers
             // Update the individual properties
             foreach (var prop in postModel.Properties)
             {
+
+                
+
                 // Get the prop config
-                var propConfig = editorProps.First(x => x.Property.Name == prop.Alias);
+                var propConfig = editorProps.First(x => !string.IsNullOrWhiteSpace(x.Alias) ? x.Alias == prop.Alias : x.Property.Name == prop.Alias);
                 if (!propConfig.IsReadOnly) {
+
+               
+
                     // Create additional data for file handling
                     var additionalData = new Dictionary<string, object>();
 
@@ -265,8 +271,8 @@ namespace Fluidity.Web.Models.Mappers
                     // Looking into the core code, these are not actually used for any lookups,
                     // rather they are used to generate a unique path, so we just use the nearest
                     // equivilaants from the fluidity api. 
-                    var cuid = $"{section.Alias}_{collection.Alias}_{entity.GetPropertyValue(collection.IdProperty)}";
-                    var puid = $"{section.Alias}_{collection.Alias}_{propConfig.Property.Name}";
+                    var cuid = $"{section.Alias}_{collection.Alias}_{entity.GetPropertyValue(collection.IdProperty.Alias)}";
+                    var puid = $"{section.Alias}_{collection.Alias}_{propConfig.Alias}";
 
                     additionalData.Add("cuid", ObjectExtensions.EncodeAsGuid(cuid));
                     additionalData.Add("puid", ObjectExtensions.EncodeAsGuid(puid));
@@ -275,7 +281,7 @@ namespace Fluidity.Web.Models.Mappers
                     var data = new ContentPropertyData(prop.Value, dataTypeInfo.PreValues, additionalData);
 
                     if (!dataTypeInfo.PropertyEditor.ValueEditor.IsReadOnly) {
-                        var currentValue = entity.GetPropertyValue(propConfig.Property);
+                        var currentValue = entity.GetPropertyValue(propConfig.Alias);
 
                         var encryptedProp = collection.EncryptedProperties?.FirstOrDefault(x => x.Name == propConfig.Property.Name);
                         if (encryptedProp != null)
@@ -313,7 +319,7 @@ namespace Fluidity.Web.Models.Mappers
                             }
                         }
 
-                        entity.SetPropertyValue(propConfig.Property, propVal);
+                        entity.SetPropertyValue(propConfig.Alias, propVal);
                     }
                 }
             }

@@ -7,6 +7,7 @@ using System;
 using System.Linq.Expressions;
 using System.Reflection;
 using Fluidity.Extensions;
+using System.Linq;
 
 namespace Fluidity.Configuration
 {
@@ -25,12 +26,16 @@ namespace Fluidity.Configuration
 
         internal Type Type => _propertyInfo.PropertyType;
 
+        protected string _alias;
+        internal string Alias => _alias;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="FluidityPropertyConfig"/> class.
         /// </summary>
         /// <param name="propertyExp">The property exp.</param>
         public FluidityPropertyConfig(LambdaExpression propertyExp)
         {
+            _alias = propertyExp.GeneratePropertyAlias();
             _propertyExp = propertyExp;
             _propertyInfo = propertyExp.GetPropertyInfo();
         }

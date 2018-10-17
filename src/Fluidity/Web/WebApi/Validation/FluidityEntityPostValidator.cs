@@ -47,7 +47,7 @@ namespace Fluidity.Web.WebApi.Validation
         {
             foreach (var p in postModel.Properties)
             {
-                if (configProps.Any(property => property.Property.Name == p.Alias) == false)
+                if (configProps.Any(property => property.Alias == p.Alias) == false)
                 {
                     throw new InvalidOperationException($"property with alias: {p.Alias} was not found");
                 }
@@ -61,7 +61,7 @@ namespace Fluidity.Web.WebApi.Validation
             foreach (var p in configProps)
             {
                 var dataTypeInfo = _dataTypeHelper.ResolveDataType(p, isReadOnly);
-                var postedValue = postModel.Properties.Single(x => x.Alias == p.Property.Name).Value;
+                var postedValue = postModel.Properties.Single(x => x.Alias == p.Alias).Value;
 
                 // Validate against the prop editor validators
                 foreach (var result in dataTypeInfo.PropertyEditor.ValueEditor.Validators

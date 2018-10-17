@@ -4,6 +4,7 @@
 // </copyright>
 
 using System;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -42,6 +43,16 @@ namespace Fluidity.Extensions
             //}
 
             return propInfo;
+        }
+
+        public static string GeneratePropertyAlias(this LambdaExpression propertyLambda) {
+
+            var propertyLambdaString = propertyLambda.Body.ToString()
+                .Replace("Convert", "")
+                .Replace("(", "")
+                .Replace(")", "");
+
+            return string.Join(".", propertyLambdaString.Split('.').Skip(1));
         }
     }
 }

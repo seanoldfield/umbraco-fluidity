@@ -138,7 +138,7 @@ namespace Fluidity.Data
 
             if (fireEvents)
             {
-                var existing = Get(entity.GetPropertyValue(_collection.IdProperty));
+                var existing = Get(entity.GetPropertyValue(_collection.IdProperty.Alias));
                 args = new SavingEntityEventArgs
                 {
                     Entity = new BeforeAndAfter<object>

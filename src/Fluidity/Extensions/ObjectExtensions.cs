@@ -4,6 +4,7 @@
 // </copyright>
 
 using System;
+using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
@@ -19,7 +20,24 @@ namespace Fluidity.Extensions
 
         public static object GetPropertyValue(this object instance, string propertyName)
         {
-            return instance.GetType().GetPropertyValue(propertyName, instance);
+            var obj = instance;
+
+            string[] bits = propertyName.Split('.');
+            for (int i = 0; i < bits.Length - 1; i++)
+            {
+                PropertyInfo propertyToGet = obj.GetType().GetProperty(bits[i]);
+
+                var currentVal = propertyToGet.GetValue(obj, null);
+
+                if (currentVal == null)
+                {
+                    return null;
+                }
+
+                obj = propertyToGet.GetValue(obj, null);
+            }
+
+            return obj.GetType().GetPropertyValue(bits.Last(), obj);
         }
 
         public static void SetPropertyValue(this object instance, PropertyInfo propertyInfo, object value)
@@ -29,10 +47,28 @@ namespace Fluidity.Extensions
 
         public static void SetPropertyValue(this object instance, string propertyName, object value)
         {
-            var prop = instance.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
-            if (prop.CanWrite)
+            var obj = instance;
+
+            string[] bits = propertyName.Split('.');
+            for (int i = 0; i < bits.Length - 1; i++)
             {
-                prop.SetValue(instance, value);
+                PropertyInfo propertyToGet = obj.GetType().GetProperty(bits[i]);
+
+                var currentVal = propertyToGet.GetValue(obj, null);
+
+                if (currentVal == null)
+                {
+                    propertyToGet.SetValue(obj, Activator.CreateInstance(propertyToGet.PropertyType));
+                }
+
+                obj = propertyToGet.GetValue(obj, null);
+            }
+
+            PropertyInfo propertyToSet = obj.GetType().GetProperty(bits.Last());
+
+            if (propertyToSet.CanWrite)
+            {
+                propertyToSet.SetValue(obj, value, null);
             }
         }
 

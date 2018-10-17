@@ -6,6 +6,8 @@
 using System.Linq.Expressions;
 using System;
 using Fluidity.ValueMappers;
+using System.Linq;
+using Fluidity.Extensions;
 
 namespace Fluidity.Configuration
 {
@@ -44,6 +46,8 @@ namespace Fluidity.Configuration
 	    protected bool _isReadOnly;
 	    internal bool IsReadOnly => _isReadOnly;
 
+        protected string _alias;
+        internal string Alias => _alias;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="FluidityEditorFieldConfig"/> class.
@@ -51,6 +55,7 @@ namespace Fluidity.Configuration
 		/// <param name="propertyExpression">The property exp.</param>
 		protected FluidityEditorFieldConfig(LambdaExpression propertyExpression)
         {
+            _alias = propertyExpression.GeneratePropertyAlias();
             _property = propertyExpression;
         }
     }
